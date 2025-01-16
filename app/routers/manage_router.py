@@ -1,9 +1,14 @@
 import random
+import secrets
+from typing import Annotated
 import bcrypt
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from faker import Faker
 
 from app.db import get_conn
+from app.config import get_settings
+
+settings = get_settings()
 
 fake = Faker()
 router = APIRouter(prefix="/manage")
@@ -17,6 +22,15 @@ router = APIRouter(prefix="/manage")
 #         cursor.close()
 #         print(record)
 #         return "pong"
+
+def hash_api_key(api_key: Annotated[str| None, Header()] = None):
+    if not api_key:
+        raise HTTPException(status_code=401, detail="api key missing")
+    api_key_bytes = api_key.encode("utf8")
+    correct_api_key_bytes = settings.api_key.encode("utf8")
+    if not secrets.compare_digest(api_key_bytes,correct_api_key_bytes):
+        raise HTTPException(status_code=401, detail="unauthenticated")
+    return api_key
 
 def load_fake_data_task():
     print("executing load fake data")
@@ -51,7 +65,7 @@ def load_fake_data_task():
                     )
             
 @router.get("/ping")
-def ping():
+def ping(api_key: Annotated[str, Depends(hash_api_key)]):
     with get_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT 1")
@@ -60,6 +74,6 @@ def ping():
             return "pong"
         
 @router.get("/load-fake-data")
-def load_fake_data(background_tasks: BackgroundTasks):
+def load_fake_data(background_tasks: BackgroundTasks, api_key: Annotated[str, Depends(hash_api_key)]):
     background_tasks.add_task(load_fake_data_task)
     return {"message": "load fake data running background"}
