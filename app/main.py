@@ -3,11 +3,12 @@ from typing import Union
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from app.routers import manage_router, auth_router
+from app.routers import manage_router, auth_router, users_router
 
 app = FastAPI()
 app.include_router(manage_router.router)
 app.include_router(auth_router.router)
+app.include_router(users_router.router)
 
 
 class Item(BaseModel):
