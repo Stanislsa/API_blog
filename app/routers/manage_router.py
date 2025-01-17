@@ -40,12 +40,12 @@ def load_fake_data_task():
         with conn.cursor() as cursor:
             cursor.execute(
                 "insert into users (email,password,is_admin) values (%s, %s, %s)", 
-                ["admin@example.com", hashed, True])
+                ["admin@example.com", hashed.decode("utf-8"), True])
 
             for i in range(10):
                 cursor.execute(
                     "insert into users (email, password) values (%s, %s)", 
-                    [fake.email(), hashed]
+                    [fake.email(), hashed.decode("utf-8")]
                 )
             
             for category in ["react", "fastapi", "springboot", "nextjs"]:
@@ -76,4 +76,4 @@ def ping(api_key: Annotated[str, Depends(hash_api_key)]):
 @router.get("/load-fake-data")
 def load_fake_data(background_tasks: BackgroundTasks, api_key: Annotated[str, Depends(hash_api_key)]):
     background_tasks.add_task(load_fake_data_task)
-    return {"message": "load fake data running background"}
+    return {"message": "load fake data running in background"}
