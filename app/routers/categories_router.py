@@ -1,8 +1,7 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
-from app.db import get_db
-from psycopg import Connection
+from app.dependencies import DBDep
 from psycopg2.extras import DictCursor
 
 router = APIRouter(prefix="/categories")
@@ -10,11 +9,11 @@ router = APIRouter(prefix="/categories")
 class Category(BaseModel):
     category_id: int
     name: str
-    create_at: datetime
-    update_at: datetime
+    created_at: datetime
+    updated_at: datetime
     
 @router.get("/")
-def get_categories(conn: Connection = Depends(get_db)):
+def get_categories(conn: DBDep):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute("select * from categories")
         records = cursor.fetchall()
@@ -23,8 +22,8 @@ def get_categories(conn: Connection = Depends(get_db)):
             Category(
                 category_id= record["categorie_id"],
                 name= record["name"],
-                create_at= record["created_at"],
-                update_at= record["update_at"]
+                created_at= record["created_at"],
+                updated_at= record["updated_at"]
             )
             for record in records
         ]

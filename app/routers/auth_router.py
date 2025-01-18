@@ -4,7 +4,6 @@ import bcrypt
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, EmailStr
 from app.db import get_conn
-from psycopg.rows import class_row
 from psycopg2.extras import DictCursor
 from app.config import get_settings
 
