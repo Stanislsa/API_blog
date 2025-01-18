@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from psycopg2.extras import DictCursor
@@ -25,3 +26,19 @@ def me(current_user_id: str =  Depends(get_current_user_id), conn = Depends(get_
         }
         
     return UserRes(**user_data)
+
+@router.get("/",response_model=List[UserRes])
+def get_users(conn = Depends(get_db)):
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        cursor.execute("select * from users where is_admin  = true")
+        records =  cursor.fetchall()
+        
+        users = [
+            UserRes(
+                user_id=record["user_id"],
+                email=record["email"],
+                username=record["username"],
+            )
+            for record in records
+        ]     
+    return users

@@ -39,17 +39,17 @@ def load_fake_data_task():
     with get_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
-                "insert into users (email,password,is_admin) values (%s, %s, %s)", 
-                ["admin@example.com", hashed.decode("utf-8"), True])
+                "insert into users (email, username, password, is_admin) values (%s, %s, %s, %s) on conflict do nothing", 
+                ["admin@example.com", fake.simple_profile()["username"],hashed.decode("utf-8"), True])
 
             for i in range(10):
                 cursor.execute(
-                    "insert into users (email, password) values (%s, %s)", 
-                    [fake.email(), hashed.decode("utf-8")]
+                    "insert into users (email, username, password) values (%s, %s, %s)", 
+                    [fake.email(), fake.simple_profile()["username"], hashed.decode("utf-8")]
                 )
             
             for category in ["react", "fastapi", "springboot", "nextjs"]:
-                cursor.execute("insert into categories (name) values (%s)", [category])
+                cursor.execute("insert into categories (name) values (%s) on conflict do nothing", [category])
                 
             for i in range(20):
                 post = {
