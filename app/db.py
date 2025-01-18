@@ -25,3 +25,7 @@ conninfo = (
 
 def get_conn():
     return psycopg2.connect(conninfo)
+
+def get_db():
+    with get_conn() as conn:
+        yield conn
