@@ -42,3 +42,17 @@ def get_users(conn = Depends(get_db)):
             for record in records
         ]     
     return users
+
+@router.get("/{user_id}")
+def get_user(user_id: int, conn = Depends(get_db)):
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        cursor.execute("select * from users where user_id = %s", [user_id])
+        record = cursor.fetchone()
+        
+        user_data = {
+            "user_id": record["user_id"],
+            "email": record["email"],
+            "username": record["username"],
+        }
+        
+    return UserRes(**user_data)
