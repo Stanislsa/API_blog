@@ -21,6 +21,19 @@ def get_current_user_id(jwt: Annotated[str | None, Cookie()] = None):
 def get_db():
     with get_conn() as conn:
         yield conn
+   
+
+def is_admin(jwt: Annotated[str | None, Cookie()] = None):
+    if not jwt:
+        raise HTTPException(status_code=401,detail="jwt token missing")
+    try:
+        payload = josejwt.decode(jwt,settings.jwt_secret, algorithms=["HS256"])
+        if not payload.get("is_admin"):
+            raise HTTPException(status_code=403,detail="unauthorized")
+    except JWTError as e:
+        print(e)
+        raise HTTPException(status_code=401,detail="invalid credentials")   
         
 DBDep = Annotated[Connection, Depends(get_db)]
 AuthDep = Annotated[Connection, Depends(get_current_user_id)]
+AdminDep = Annotated[Connection, Depends(is_admin)]

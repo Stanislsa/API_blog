@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.dependencies import DBDep, AuthDep
+from app.dependencies import DBDep, AuthDep, AdminDep
 from psycopg2.extras import DictCursor
 from psycopg2.extras import RealDictCursor
 from psycopg2 import errors
@@ -35,7 +35,7 @@ def get_categories(conn: DBDep):
     return categories
 
 @router.post("/")
-def create_category(conn: DBDep, current_user_id: AuthDep, category_req: CategoryReq):
+def create_category(conn: DBDep, current_user_id: AuthDep, is_admin: AdminDep, category_req: CategoryReq):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             # Insérer la catégorie
