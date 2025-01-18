@@ -23,3 +23,4 @@ def get_db():
         yield conn
         
 DBDep = Annotated[Connection, Depends(get_db)]
+AuthDep = Annotated[Connection, Depends(get_current_user_id)]

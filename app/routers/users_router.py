@@ -5,8 +5,7 @@ from psycopg2.extras import DictCursor
 from psycopg import Connection
 
 
-from app.dependencies import DBDep
-from app.dependencies import get_current_user_id
+from app.dependencies import DBDep, AuthDep
 
 router = APIRouter(prefix="/users")
 
@@ -16,7 +15,7 @@ class UserRes(BaseModel):
     username: str
 
 @router.get("/me")
-def me(current_user_id: str =  Depends(get_current_user_id), conn : Connection = Depends(DBDep)):
+def me(current_user_id: AuthDep, conn : DBDep):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute("select * from users where user_id  = %s", [current_user_id])
         record = cursor.fetchone()
@@ -46,7 +45,7 @@ def get_users(conn = Depends(DBDep)):
     return users
 
 @router.get("/{user_id}")
-def get_user(user_id: int, conn: Connection = Depends(DBDep)):
+def get_user(user_id: int, conn: DBDep):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute("select * from users where user_id = %s", [user_id])
         record = cursor.fetchone()
