@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from psycopg2.extras import DictCursor
+from psycopg import Connection
 
 from app.db import get_conn, get_db
 from app.dependencies import get_current_user_id
@@ -14,7 +15,7 @@ class UserRes(BaseModel):
     username: str
 
 @router.get("/me")
-def me(current_user_id: str =  Depends(get_current_user_id), conn = Depends(get_db)):
+def me(current_user_id: str =  Depends(get_current_user_id), conn : Connection = Depends(get_db)):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute("select * from users where user_id  = %s", [current_user_id])
         record = cursor.fetchone()
@@ -44,7 +45,7 @@ def get_users(conn = Depends(get_db)):
     return users
 
 @router.get("/{user_id}")
-def get_user(user_id: int, conn = Depends(get_db)):
+def get_user(user_id: int, conn: Connection = Depends(get_db)):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         cursor.execute("select * from users where user_id = %s", [user_id])
         record = cursor.fetchone()
