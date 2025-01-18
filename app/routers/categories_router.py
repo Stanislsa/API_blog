@@ -1,8 +1,10 @@
 from datetime import datetime
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.dependencies import DBDep
 from psycopg2.extras import DictCursor
+from psycopg2.extras import RealDictCursor
+from psycopg2 import errors
 
 router = APIRouter(prefix="/categories")
 
@@ -11,6 +13,9 @@ class Category(BaseModel):
     name: str
     created_at: datetime
     updated_at: datetime
+    
+class CategoryReq(BaseModel):
+    name: str
     
 @router.get("/")
 def get_categories(conn: DBDep):
@@ -28,4 +33,27 @@ def get_categories(conn: DBDep):
             for record in records
         ]
     return categories
-        
+
+@router.post("/")
+def create_category(conn: DBDep, category_req: CategoryReq):
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Insérer la catégorie
+            cursor.execute(
+                "INSERT INTO categories (name) VALUES (%s) RETURNING *",
+                [category_req.name]
+            )
+            record = cursor.fetchone()
+            categorie = {
+                "id": record["categorie_id"],
+                "name": record["name"],
+                "created_at": record["created_at"],
+                "updated_at": record["updated_at"]
+            }
+        return categorie
+    except errors.UniqueViolation:
+        # Gestion de la violation de contrainte d'unicité
+        raise HTTPException(status_code=400, detail="Category already exists")
+    except Exception as e:
+        # Gestion générique des erreurs
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
