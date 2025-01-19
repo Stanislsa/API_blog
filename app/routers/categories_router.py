@@ -35,7 +35,7 @@ def get_categories(conn: DBDep):
     return categories
 
 @router.post("/")
-def create_category(conn: DBDep, current_user_id: AuthDep, is_admin: AdminDep, category_req: CategoryReq):
+def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             # Insérer la catégorie
@@ -66,4 +66,15 @@ def update_category(conn: DBDep, is_admin: AdminDep, category_id: int, category_
         )
         record = cursor.fetchone()
         return record
+
+@router.delete("/{category_id}")
+def delete_category(conn: DBDep, is_admin: AdminDep, category_id: int):
+    with conn.cursor() as cursor:
+        cursor.execute("DELETE FROM categories WHERE categorie_id = %s", [category_id])
+        
+        # Vérification des lignes affectées
+        if cursor.rowcount > 0:
+            return {"message": f"Category with ID {category_id} deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Category not found")
         
