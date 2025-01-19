@@ -57,3 +57,13 @@ def create_category(conn: DBDep, current_user_id: AuthDep, is_admin: AdminDep, c
     except Exception as e:
         # Gestion générique des erreurs
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+@router.put("/{category_id}")
+def update_category(conn: DBDep, is_admin: AdminDep, category_id: int, category_req: CategoryReq):
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute("update categories set name = %s, updated_at = %s where categorie_id = %s returning *", 
+            [category_req.name, datetime.now(), category_id]
+        )
+        record = cursor.fetchone()
+        return record
+        
