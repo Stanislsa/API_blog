@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.dependencies import DBDep, AuthDep, AdminDep, JwtDep
@@ -29,7 +30,7 @@ class Post(BaseModel):
     
 
 @router.get("/")
-def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, author = str | None, sort = str | None, page:int =0):
+def get_posts(conn: DBDep, jwt_payload: JwtDep, category: Optional[str] = None, author: Optional[str] = None, sort: Optional[str] = None, page: int = 0):
     with (
         conn.cursor(cursor_factory=DictCursor) as post_cursor, 
         conn.cursor(cursor_factory=DictCursor) as category_cursor, 
@@ -72,6 +73,15 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, aut
                 case _:
                     HTTPException(status_code=400, detail="invalid sort param")
                     
+        limit = 10
+        offset = 0
+        
+        if page:
+            offset = page * limit
+            
+        sql += " limit %(limit)s offset %(offset)s"
+        params["limit"] = limit
+        params["offset"] = offset
                 
         post_cursor.execute(sql, params)
         records = post_cursor.fetchall()
