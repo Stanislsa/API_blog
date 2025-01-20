@@ -60,7 +60,7 @@ def signin(sign_in_req: SignInReq, response: Response):
                 "SELECT * FROM users WHERE email ILIKE %s", [sign_in_req.email]
             )
             record = cursor.fetchone()
-            
+            print(record)
             if not record:
                 raise HTTPException(status_code=404, detail="User not found")
             
