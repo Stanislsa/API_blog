@@ -29,7 +29,7 @@ class Post(BaseModel):
     
 
 @router.get("/")
-def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, author = str | None):
+def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, author = str | None, sort = str | None, page:int =0):
     with (
         conn.cursor(cursor_factory=DictCursor) as post_cursor, 
         conn.cursor(cursor_factory=DictCursor) as category_cursor, 
@@ -62,6 +62,16 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, aut
             
             sql += " and user_id = %(user_id)s"
             params["user_id"] = users_record["user_id"]  
+        
+        if sort:
+            match sort:
+                case "-published_at":
+                    sql += " order by published_at desc"
+                case "published_at":
+                    sql += " order by published_at asc"
+                case _:
+                    HTTPException(status_code=400, detail="invalid sort param")
+                    
                 
         post_cursor.execute(sql, params)
         records = post_cursor.fetchall()
