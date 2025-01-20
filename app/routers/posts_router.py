@@ -8,6 +8,10 @@ from psycopg2 import errors
 
 router = APIRouter(prefix="/posts")
 
+class User(BaseModel):
+    user_id: int
+    username: str
+
 class Category(BaseModel):
     categorie_id: int
     name: str
@@ -25,15 +29,19 @@ class Post(BaseModel):
     
 
 @router.get("/")
-def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
-    with conn.cursor(cursor_factory=DictCursor) as post_cursor, conn.cursor(cursor_factory=DictCursor) as category_cursor:
+def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None, author = str | None):
+    with (
+        conn.cursor(cursor_factory=DictCursor) as post_cursor, 
+        conn.cursor(cursor_factory=DictCursor) as category_cursor, 
+        conn.cursor(cursor_factory=DictCursor) as users_cursor
+    ):
         
         params = {}
         
         if not jwt_payload:
             sql = "select * from posts where status = 'public'"
         elif jwt_payload["is_admin"]:
-            sql = "select * from posts"
+            sql = "select * from posts where 1 = 1"
         elif not jwt_payload["is_admin"]:
             sql = "select * from posts where status != 'draft'"
         
@@ -43,8 +51,17 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
             if not category_record:
                 raise HTTPException(status_code=404, detail="category not found")
 
-            sql += "and categorie_id = %(categorie_id)s"
+            sql += " and categorie_id = %(categorie_id)s"
             params["categorie_id"] = category_record["categorie_id"]  
+            
+        if author:
+            users_cursor.execute("select * from users where username = %s", [author])
+            users_record = users_cursor.fetchone()
+            if not users_record:
+                raise HTTPException(status_code=404, detail="auther not found")
+            
+            sql += " and user_id = %(user_id)s"
+            params["user_id"] = users_record["user_id"]  
                 
         post_cursor.execute(sql, params)
         records = post_cursor.fetchall()
@@ -62,5 +79,8 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
             )
             for record in records
         ]
+        
+        print(sql)
+        print(params)
         
         return posts
