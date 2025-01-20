@@ -8,6 +8,10 @@ from psycopg2 import errors
 
 router = APIRouter(prefix="/posts")
 
+class Category(BaseModel):
+    categorie_id: int
+    name: str
+
 class Post(BaseModel):
     post_id: int
     user_id: int
@@ -21,17 +25,29 @@ class Post(BaseModel):
     
 
 @router.get("/")
-def get_posts(conn: DBDep, jwt_payload: JwtDep):
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
+def get_posts(conn: DBDep, jwt_payload: JwtDep, category: str | None = None):
+    with conn.cursor(cursor_factory=DictCursor) as post_cursor, conn.cursor(cursor_factory=DictCursor) as category_cursor:
+        
+        params = {}
+        
         if not jwt_payload:
             sql = "select * from posts where status = 'public'"
         elif jwt_payload["is_admin"]:
             sql = "select * from posts"
         elif not jwt_payload["is_admin"]:
             sql = "select * from posts where status != 'draft'"
-        cursor.execute(sql)
-        records = cursor.fetchall()
         
+        if category:
+            category_cursor.execute("select * from categories where name = %s", [category])
+            category_record = category_cursor.fetchone()
+            if not category_record:
+                raise HTTPException(status_code=404, detail="category not found")
+
+            sql += "and categorie_id = %(categorie_id)s"
+            params["categorie_id"] = category_record["categorie_id"]  
+                
+        post_cursor.execute(sql, params)
+        records = post_cursor.fetchall()
         posts = [
             Post(
                 post_id= record["post_id"],
@@ -48,4 +64,3 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep):
         ]
         
         return posts
-    
