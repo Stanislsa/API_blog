@@ -27,6 +27,8 @@ class Post(BaseModel):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    user: Optional[User] = None
+    category: Optional[Category] = None
     
 
 @router.get("/")
@@ -103,4 +105,28 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: Optional[str] = None, 
         print(sql)
         print(params)
         
+        category_ids = [post.categorie_id for post in posts]
+        category_cursor.execute("select * from categories where categorie_id = any(%s)", [category_ids])
+        categories = category_cursor.fetchall()
+        category_dict = {category["categorie_id"]: Category(**category) for category in categories}
+        
+        post_user_ids = [post.user_id for post in posts]
+        users_cursor.execute("select * from users where user_id = any(%s)", [post_user_ids])
+        users = users_cursor.fetchall()
+        user_dict = {user["user_id"]: User(**user) for user in users}
+                
+        for post in posts:
+            post.category = category_dict.get(post.categorie_id)
+            post.user = user_dict.get(post.user_id)
+
+            post.category = {
+                "categorie_id": post.category.categorie_id,
+                "name": post.category.name
+            } if post.category else None
+            
+            post.user = {
+                "user_id": post.user.user_id,
+                "username": post.user.username
+            } if post.user else None
+
         return posts
