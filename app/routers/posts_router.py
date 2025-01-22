@@ -29,6 +29,16 @@ class Post(BaseModel):
     updated_at: datetime
     user: Optional[User] = None
     category: Optional[Category] = None
+
+class UpdatePostReq(BaseModel):
+    post_id: int
+    user_id: int
+    categorie_id: int
+    title: str | None
+    content: str | None
+    status: str
+    published_at: datetime | None
+    updated_at: datetime
     
 
 @router.get("/")
@@ -161,3 +171,63 @@ def get_post(post_id: int, jwt_payload: JwtDep, conn:DBDep):
         }
         
         return Post(**post)
+    
+@router.put("/{post_id}")
+def update_post(post_id: int, update_poste_req: UpdatePostReq, is_admin: AdminDep, conn: DBDep):
+    post = {
+        "post_id": post_id,
+        "user_id": update_poste_req.user_id,
+        "categorie_id": update_poste_req.categorie_id,
+        "title": update_poste_req.title,
+        "content": update_poste_req.content,
+        "status": update_poste_req.status,
+        "published_at": update_poste_req.published_at,
+        "updated_at": update_poste_req.updated_at,
+    }
+
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(
+            """
+            UPDATE posts 
+            SET user_id = %(user_id)s, 
+                categorie_id = %(categorie_id)s, 
+                title = %(title)s, 
+                content = %(content)s, 
+                status = %(status)s, 
+                published_at = %(published_at)s, 
+                updated_at = %(updated_at)s 
+            WHERE post_id = %(post_id)s 
+            RETURNING *;
+            """,
+            post,
+        )
+        record = cursor.fetchone()
+        
+        if not record:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        # Récupérer l'utilisateur associé
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", [record["user_id"]])
+        user_record = cursor.fetchone()
+        user = User(**user_record) if user_record else None
+
+        # Récupérer la catégorie associée
+        cursor.execute("SELECT * FROM categories WHERE categorie_id = %s", [record["categorie_id"]])
+        category_record = cursor.fetchone()
+        category = Category(**category_record) if category_record else None
+
+        # Retourner le post sous forme de DTO
+        updated_post = Post(
+            post_id=record["post_id"],
+            user_id=record["user_id"],
+            categorie_id=record["categorie_id"],
+            title=record["title"],
+            content=record["content"],
+            status=record["status"],
+            published_at=record["published_at"],
+            created_at=record["created_at"],
+            updated_at=record["updated_at"],
+            user=user,
+            category=category,
+        )
+        return updated_post
