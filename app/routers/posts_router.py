@@ -130,3 +130,34 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: Optional[str] = None, 
             } if post.user else None
 
         return posts
+    
+@router.get("/{post_id}")
+def get_post(post_id: int, jwt_payload: JwtDep, conn:DBDep):
+    with conn.cursor(cursor_factory=DictCursor) as post_cursor:
+        if not jwt_payload:
+            sql = "select * from posts where status = 'public'"
+        elif jwt_payload["is_admin"]:
+            sql = "select * from posts where 1 = 1"
+        elif not jwt_payload["is_admin"]:
+            sql = "select * from posts where status != 'draft'"
+            
+        sql += " and post_id = %s"
+        post_cursor.execute(sql, [post_id])
+        post_record = post_cursor.fetchone()
+        
+        if not post_record:
+            raise HTTPException(status_code=404, detail="post not found")
+        
+        post = {
+            "post_id": post_record["post_id"],
+            "user_id": post_record["user_id"],
+            "categorie_id": post_record["categorie_id"],
+            "title": post_record["title"],
+            "content": post_record["content"],
+            "status": post_record["status"],
+            "published_at": post_record["published_at"],
+            "created_at": post_record["created_at"],
+            "updated_at": post_record["updated_at"],
+        }
+        
+        return Post(**post)
