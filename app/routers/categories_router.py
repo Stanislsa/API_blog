@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.dependencies import DBDep, AuthDep, AdminDep
+from app.dependencies import DBDep, AdminDep
 from psycopg2.extras import DictCursor
 from psycopg2.extras import RealDictCursor
 from psycopg2 import errors
@@ -35,7 +35,7 @@ def get_categories(conn: DBDep):
     return categories
 
 @router.post("/")
-def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
+def create_category(conn: DBDep, admin_id: AdminDep, category_req: CategoryReq):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             # Insérer la catégorie
@@ -59,7 +59,7 @@ def create_category(conn: DBDep, is_admin: AdminDep, category_req: CategoryReq):
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
     
 @router.put("/{category_id}")
-def update_category(conn: DBDep, is_admin: AdminDep, category_id: int, category_req: CategoryReq):
+def update_category(conn: DBDep, admin_id: AdminDep, category_id: int, category_req: CategoryReq):
     with conn.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute("update categories set name = %s, updated_at = %s where categorie_id = %s returning *", 
             [category_req.name, datetime.now(), category_id]
@@ -68,7 +68,7 @@ def update_category(conn: DBDep, is_admin: AdminDep, category_id: int, category_
         return record
 
 @router.delete("/{category_id}")
-def delete_category(conn: DBDep, is_admin: AdminDep, category_id: int):
+def delete_category(conn: DBDep, admin_id: AdminDep, category_id: int):
     with conn.cursor() as cursor:
         cursor.execute("DELETE FROM categories WHERE categorie_id = %s", [category_id])
         

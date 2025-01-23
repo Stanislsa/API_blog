@@ -13,16 +13,6 @@ settings = get_settings()
 fake = Faker()
 router = APIRouter(prefix="/manage")
 
-# @router.get("/ping")
-# def ping():
-#     with get_conn() as conn:
-#         cursor = conn.cursor()
-#         cursor.execute("select 1")
-#         record = cursor.fetchone()
-#         cursor.close()
-#         print(record)
-#         return "pong"
-
 def hash_api_key(api_key: Annotated[str| None, Header()] = None):
     if not api_key:
         raise HTTPException(status_code=401, detail="api key missing")

@@ -2,7 +2,6 @@ from typing import List
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from psycopg2.extras import DictCursor
-from psycopg import Connection
 
 
 from app.dependencies import DBDep, AuthDep

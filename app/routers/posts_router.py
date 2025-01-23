@@ -3,10 +3,9 @@ from enum import Enum
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.dependencies import DBDep, AuthDep, AdminDep, JwtDep
+from app.dependencies import DBDep, AdminDep, JwtDep
 from psycopg2.extras import DictCursor
 from psycopg2.extras import RealDictCursor
-from psycopg2 import errors
 
 router = APIRouter(prefix="/posts")
 
