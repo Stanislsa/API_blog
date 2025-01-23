@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -8,6 +9,11 @@ from psycopg2.extras import RealDictCursor
 from psycopg2 import errors
 
 router = APIRouter(prefix="/posts")
+
+class StatusEnum(str, Enum):
+    draft = "draft"
+    private = "private"
+    public = "public"
 
 class User(BaseModel):
     user_id: int
@@ -23,7 +29,7 @@ class Post(BaseModel):
     categorie_id: int
     title: str | None
     content: str | None
-    status: str
+    status: StatusEnum
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -36,10 +42,73 @@ class UpdatePostReq(BaseModel):
     categorie_id: int
     title: str | None
     content: str | None
-    status: str
+    status: StatusEnum
     published_at: datetime | None
     updated_at: datetime
     
+class CreatePostReq(BaseModel):
+    categorie_id: int
+    title: str | None
+    content: str | None
+    status: StatusEnum
+    published_at: datetime | None = None
+    
+@router.post("/")
+def create_post(create_post_req: CreatePostReq, conn: DBDep, admin_id: AdminDep):
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        # Préparer les données pour l'insertion
+        post = {
+            "user_id": admin_id,
+            "categorie_id": create_post_req.categorie_id,
+            "title": create_post_req.title,
+            "content": create_post_req.content,
+            "status": create_post_req.status,
+            "published_at": create_post_req.published_at,
+            "updated_at": datetime.now(),
+        }
+        
+        # Insérer le post et récupérer le résultat
+        cursor.execute(
+            """
+            INSERT INTO posts 
+                (user_id, categorie_id, title, content, status, published_at, updated_at)
+            VALUES 
+                (%(user_id)s, %(categorie_id)s, %(title)s, %(content)s, %(status)s, %(published_at)s, %(updated_at)s)
+            RETURNING *;
+            """,
+            post,
+        )
+        record = cursor.fetchone()
+
+        if not record:
+            raise HTTPException(status_code=400, detail="Failed to create post")
+
+        # Récupérer l'utilisateur associé
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", [record["user_id"]])
+        user_record = cursor.fetchone()
+        user = User(**user_record) if user_record else None
+
+        # Récupérer la catégorie associée
+        cursor.execute("SELECT * FROM categories WHERE categorie_id = %s", [record["categorie_id"]])
+        category_record = cursor.fetchone()
+        category = Category(**category_record) if category_record else None
+
+        # Construire le DTO Post
+        created_post = Post(
+            post_id=record["post_id"],
+            user_id=record["user_id"],
+            categorie_id=record["categorie_id"],
+            title=record["title"],
+            content=record["content"],
+            status=record["status"],
+            published_at=record["published_at"],
+            created_at=record["created_at"],
+            updated_at=record["updated_at"],
+            user=user,
+            category=category,
+        )
+
+        return created_post
 
 @router.get("/")
 def get_posts(conn: DBDep, jwt_payload: JwtDep, category: Optional[str] = None, author: Optional[str] = None, sort: Optional[str] = None, page: int = 0):
@@ -173,7 +242,7 @@ def get_post(post_id: int, jwt_payload: JwtDep, conn:DBDep):
         return Post(**post)
     
 @router.put("/{post_id}")
-def update_post(post_id: int, update_poste_req: UpdatePostReq, is_admin: AdminDep, conn: DBDep):
+def update_post(post_id: int, update_poste_req: UpdatePostReq, admin_id: AdminDep, conn: DBDep):
     post = {
         "post_id": post_id,
         "user_id": update_poste_req.user_id,
@@ -231,3 +300,13 @@ def update_post(post_id: int, update_poste_req: UpdatePostReq, is_admin: AdminDe
             category=category,
         )
         return updated_post
+    
+@router.delete('/{post_id}')
+def delete_post(post_id: int, admin_id: AdminDep, conn: DBDep):
+    with conn.cursor() as cursor:
+        cursor.execute("delete from posts where post_id = %s", [post_id])
+        
+        if cursor.rowcount > 0:
+            return {"message": f"Post with ID {post_id} deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Post not found")
