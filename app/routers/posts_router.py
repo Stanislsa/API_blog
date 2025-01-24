@@ -184,9 +184,6 @@ def get_posts(conn: DBDep, jwt_payload: JwtDep, category: Optional[str] = None, 
             for record in records
         ]
         
-        print(sql)
-        print(params)
-        
         category_ids = [post.categorie_id for post in posts]
         category_cursor.execute("select * from categories where categorie_id = any(%s)", [category_ids])
         categories = category_cursor.fetchall()
