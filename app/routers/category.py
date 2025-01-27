@@ -3,37 +3,36 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.db import get_db
-# from app.dependencies import get_db, AdminDep
-# from app.models import Category as CategoryModel
+# from app.core.db import get_conn
+from app.core.dependencies import AdminDep, DBDep
+from app.models.models import Category as CategoryModel
 
 router = APIRouter()
 
-# Pydantic models for request and response
-class Category(BaseModel):
-    id: int
+class CategoryResponse(BaseModel):
+    categorie_id: int
     name: str
     created_at: datetime
     updated_at: datetime
 
-    # class Config:
-    #     orm_mode = True
+    class Config:
+        orm_mode = True
 
 class CategoryReq(BaseModel):
     name: str
 
 # Endpoint to get all categories
-@router.get("/", response_model=list[Category])
-def get_categories(db: Session = Depends(get_db)):
-    categories = db.query(Category).all()
+@router.get("/", response_model=list[CategoryResponse])
+def get_categories(db: Session = DBDep):
+    categories = db.query(CategoryModel).all()
     return categories
 
 # Endpoint to create a new category
-@router.post("/", response_model=Category)
+@router.post("/", response_model=CategoryResponse)
 def create_category(
     category_req: CategoryReq, 
-    db: Session = Depends(get_db), 
-    admin_id: AdminDep = Depends()
+    admin_id: AdminDep,
+    db: Session = DBDep
 ):
     # Vérification si la catégorie existe déjà
     existing_category = db.query(CategoryModel).filter_by(name=category_req.name).first()
@@ -52,14 +51,14 @@ def create_category(
     return new_category
 
 # Endpoint to update a category
-@router.put("/{category_id}", response_model=Category)
+@router.put("/{category_id}", response_model=CategoryResponse)
 def update_category(
     category_id: int, 
     category_req: CategoryReq, 
-    db: Session = Depends(get_db), 
-    admin_id: AdminDep = Depends()
+    admin_id: AdminDep ,
+    db: Session = DBDep 
 ):
-    category = db.query(CategoryModel).filter_by(id=category_id).first()
+    category = db.query(CategoryModel).filter_by(categorie_id=category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
@@ -73,10 +72,10 @@ def update_category(
 @router.delete("/{category_id}")
 def delete_category(
     category_id: int, 
-    db: Session = Depends(get_db), 
-    admin_id: AdminDep = Depends()
+    admin_id: AdminDep,
+    db: Session = DBDep
 ):
-    category = db.query(CategoryModel).filter_by(id=category_id).first()
+    category = db.query(CategoryModel).filter_by(categorie_id=category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     

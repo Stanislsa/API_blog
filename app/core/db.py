@@ -10,7 +10,7 @@ engine = create_engine(settings.DATABASE_URL)
 # Configurer la session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db():
+def get_conn():
     db = SessionLocal()
     try:
         yield db

@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from jose import jwt
 from datetime import datetime, timedelta
 import bcrypt
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, EmailStr
-from app.core.db import get_db
+from app.core.dependencies import DBDep
 from app.core.config import get_settings
 from app.models.models import User  # Assurez-vous que votre modèle User est importé
 
@@ -29,7 +29,7 @@ class UserDB(BaseModel):
     is_admin: bool
 
 @router.post("/signup")
-def signup(sign_up_req: SignUpReq, db: Session = Depends(get_db)):
+def signup(sign_up_req: SignUpReq, db: Session = DBDep):
     hashed = bcrypt.hashpw(sign_up_req.password.encode("utf-8"), bcrypt.gensalt())
 
     # Vérifier si l'utilisateur existe déjà
@@ -47,7 +47,7 @@ def signup(sign_up_req: SignUpReq, db: Session = Depends(get_db)):
     return {"message": "Sign up success"}
 
 @router.post("/signin")
-def signin(sign_in_req: SignInReq, response: Response, db: Session = Depends(get_db)):
+def signin(sign_in_req: SignInReq, response: Response, db: Session = DBDep):
     # Vérifier les champs
     if not sign_in_req.email or not sign_in_req.password:
         raise HTTPException(status_code=400, detail="Email and password are required")

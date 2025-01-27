@@ -1,9 +1,7 @@
 from sqlalchemy import Column, DateTime
 from datetime import datetime
 from sqlalchemy import Column, BigInteger, Text, Boolean, ForeignKey, TIMESTAMP
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 from .base import Base
 
 class TimestampMixin:
