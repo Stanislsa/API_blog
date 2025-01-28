@@ -1,11 +1,14 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from enum import Enum
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional
 from app.core.dependencies import AdminDep, DBDep
 from app.models.models import Post as PostModel
+from app.models.models import Category as CategoryModel
+from app.models.models import User as UserModel
 
 router = APIRouter()
 
@@ -51,9 +54,52 @@ class PostReq(BaseModel):
 
 
 # Endpoint to get all posts
-@router.get("/", response_model=list[PostResponse])
-def get_posts(db: Session = DBDep):
-    posts = db.query(PostModel).all()
+@router.get("/", response_model=List[PostResponse])
+def get_posts(
+    db: Session = DBDep,
+    category: Optional[str] = None,
+    author: Optional[str] = None,
+    sort: Optional[str] = None,
+    page: int = Query(0, ge=0),
+    limit: int = Query(10, gt=0, le=100)
+):
+    # Base query
+    query = db.query(PostModel).join(UserModel).outerjoin(CategoryModel)
+
+    # Filtering by category
+    if category:
+        category_obj = db.query(CategoryModel).filter(CategoryModel.name == category).first()
+        if not category_obj:
+            raise HTTPException(status_code=404, detail="Category not found")
+        query = query.filter(PostModel.categorie_id == category_obj.categorie_id)
+
+    # Filtering by author
+    if author:
+        user_obj = db.query(UserModel).filter(UserModel.username == author).first()
+        if not user_obj:
+            raise HTTPException(status_code=404, detail="Author not found")
+        query = query.filter(PostModel.user_id == user_obj.user_id)
+
+    # Sorting
+    sort_options = {
+        "-published_at": desc(PostModel.published_at),
+        "published_at": asc(PostModel.published_at),
+        "-author": desc(UserModel.username),
+        "author": asc(UserModel.username),
+    }
+    if sort:
+        if sort not in sort_options:
+            raise HTTPException(status_code=400, detail="Invalid sort parameter")
+        query = query.order_by(sort_options[sort])
+
+    # Pagination
+    offset = page * limit
+    query = query.offset(offset).limit(limit)
+
+    # Execute query
+    posts = query.all()
+
+    # Return response
     return posts
 
 # Endpoint to create a new post
