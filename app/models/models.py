@@ -27,7 +27,7 @@ class User(Base, TimestampMixin):
     is_admin = Column(Boolean, nullable=False, default=False)
     username = Column(Text, nullable=False, unique=True)
 
-    posts = relationship("Post", back_populates="author")
+    posts = relationship("Post", back_populates="user")
 
 
 class Post(Base, TimestampMixin):
@@ -41,5 +41,5 @@ class Post(Base, TimestampMixin):
     status = Column(Text, nullable=False)
     published_at = Column(TIMESTAMP)
 
-    author = relationship("User", back_populates="posts")
+    user = relationship("User", back_populates="posts")
     category = relationship("Category", back_populates="posts")
