@@ -34,7 +34,7 @@ Avant de lancer le projet, assurez-vous d'avoir installé :
 
 ### 1️⃣ Lancer avec Docker (Recommandé)
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 Cela va démarrer l'API FastAPI et PostgreSQL.
 
@@ -55,7 +55,7 @@ Cela va démarrer l'API FastAPI et PostgreSQL.
    ```
 4. **Démarrer le serveur**
    ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn app.core.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
 ## 🔗 Documentation API
