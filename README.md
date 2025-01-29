@@ -28,7 +28,7 @@ Avant de lancer le projet, assurez-vous d'avoir installé :
    API_KEY=""
    JWT_SECRET=""
    ```
-## creer votre propre API_KEY et JWT_SECRET
+## ⚠ Creer votre propre API_KEY et JWT_SECRET
 
 ## 🚀 Installation & Lancement
 
