@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.routers import categories_router, manage_router, auth_router, posts_router, users_router
 
+# router
 app = FastAPI()
 app.include_router(manage_router.router)
 app.include_router(auth_router.router)
