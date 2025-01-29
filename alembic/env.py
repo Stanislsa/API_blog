@@ -2,7 +2,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.models.base import Base
-from app.core.config import settings  # Import de settings pour accéder à DATABASE_URL
+# from app.core.config import settings  # Import de settings pour accéder à DATABASE_URL
 from dotenv import load_dotenv  # Pour charger les variables d'environnement
 import os
 
