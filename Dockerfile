@@ -23,4 +23,4 @@ COPY . .
 EXPOSE 8000
 
 # Commande pour démarrer l'application FastAPI
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.core.main:app", "--host", "0.0.0.0", "--port", "8000"]

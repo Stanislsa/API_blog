@@ -1,53 +1,73 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from app.models.base import Base
+# from app.core.config import settings  # Import de settings pour accéder à DATABASE_URL
+from dotenv import load_dotenv  # Pour charger les variables d'environnement
+import os
 
-# Importez Base et vos modèles depuis app.models
-from app.models.models import Base  # Assurez-vous que ce chemin est correct
-from app.models.models import *  # Cela importe tous vos modèles (Category, User, Post, etc.)
+from app.models.models import *
 
-# Configuration de la base de données
-from app.config import get_settings
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
 
-settings = get_settings()
-DATABASE_URL = f"postgresql://{settings.db_user}:{settings.db_password}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
-
+# Ceci est l'objet Alembic Config, qui fournit un accès
+# aux valeurs du fichier .ini en cours d'utilisation.
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-# Configurer le logging
+# Charger DATABASE_URL depuis les variables d'environnement
+database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    raise ValueError("DATABASE_URL is not set in your .env file")
+
+# Remplacer sqlalchemy.url dans config avec la valeur de DATABASE_URL
+config.set_main_option("sqlalchemy.url", database_url)
+
+# Configurer les logs
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Lier les métadonnées des modèles
-target_metadata = Base.metadata  # Cela devrait maintenant être correct
+# Ajoutez le MetaData de vos modèles ici pour activer l'autogénération
+target_metadata = Base.metadata
 
-def run_migrations_offline():
-    """Configurer les migrations hors ligne."""
+
+def run_migrations_offline() -> None:
+    """Exécuter les migrations en mode 'offline'.
+
+    Cette méthode configure le contexte avec uniquement une URL
+    sans créer d'Engine.
+    """
     context.configure(
-        url=DATABASE_URL,
+        url=database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
-def run_migrations_online():
-    """Configurer les migrations en ligne."""
+
+def run_migrations_online() -> None:
+    """Exécuter les migrations en mode 'online'.
+
+    Cette méthode crée un Engine et associe une connexion au contexte.
+    """
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
+
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
